@@ -162,6 +162,10 @@ export default function App() {
       setError("Please upload a valid .pdf file.");
       return;
     }
+    if (f.size > 100 * 1024 * 1024) {
+      setError("File too large. Max 50MB.");
+      return;
+    }
     setFile(f);
     setError("");
     setMarkdown("");
