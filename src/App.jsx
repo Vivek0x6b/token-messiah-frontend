@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-
+import ReactMarkdown from "react-markdown";
 const API_URL = "https://token-messiah-backend.onrender.com";
 
 const fmt = (n) => n?.toLocaleString() ?? "0";
@@ -126,23 +126,7 @@ function Spinner() {
   );
 }
 
-function renderMarkdown(text) {
-  return text.split("\n").map((line, i) => {
-    if (line.startsWith("# "))
-      return <h1 key={i} style={{ fontSize: "1.4em", margin: "20px 0 10px", color: "#e8e8e2", fontFamily: "'Syne', sans-serif", letterSpacing: "-0.02em" }}>{line.slice(2)}</h1>;
-    if (line.startsWith("## "))
-      return <h2 key={i} style={{ fontSize: "1.1em", margin: "16px 0 8px", color: "#c8f135", fontFamily: "'Space Mono', monospace", fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.08em" }}>{line.slice(3)}</h2>;
-    if (line.startsWith("### "))
-      return <h3 key={i} style={{ fontSize: "1em", margin: "12px 0 6px", color: "#aaa" }}>{line.slice(4)}</h3>;
-    if (line === "---")
-      return <hr key={i} style={{ border: "none", borderTop: "1px solid #1e1e1e", margin: "20px 0" }} />;
-    if (line.startsWith("|"))
-      return <div key={i} style={{ fontFamily: "'Space Mono', monospace", fontSize: "12px", whiteSpace: "pre", color: "#888", overflowX: "auto", lineHeight: "1.8" }}>{line}</div>;
-    if (line.trim() === "")
-      return <div key={i} style={{ height: "6px" }} />;
-    return <p key={i} style={{ margin: "3px 0", color: "#aaa", lineHeight: "1.75" }}>{line}</p>;
-  });
-}
+
 
 export default function App() {
   const [dragging, setDragging] = useState(false);
@@ -519,7 +503,7 @@ export default function App() {
                     {markdown}
                   </pre>
                 ) : (
-                  <div>{renderMarkdown(markdown)}</div>
+                  <ReactMarkdown>{markdown}</ReactMarkdown>
                 )}
               </div>
             </div>
