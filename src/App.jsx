@@ -2,8 +2,6 @@ import { useState, useRef, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 
 const API_URL = "https://token-messiah-backend.onrender.com";
-const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-
 const fmt = (n) => n?.toLocaleString() ?? "0";
 
 const css = `
@@ -29,207 +27,204 @@ const css = `
   @keyframes pulse { 0%,100% { opacity:0.4; } 50% { opacity:1; } }
   @keyframes glow { 0%,100% { box-shadow:0 0 0 0 rgba(200,241,53,0); } 50% { box-shadow:0 0 20px 4px rgba(200,241,53,0.08); } }
   @keyframes scan { 0% { top:-2px; } 100% { top:100%; } }
-  @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+  @keyframes shimmer { 0% { opacity:0.5; } 50% { opacity:1; } 100% { opacity:0.5; } }
+  @keyframes progress { 0% { width:0%; } 100% { width:100%; } }
 
   .fadeUp { animation: fadeUp 0.4s ease both; }
 
   /* Header */
-  .hdr {
-    position: sticky; top: 0; z-index: 100;
-    height: 56px; border-bottom: 1px solid var(--border);
-    background: rgba(7,7,8,0.9); backdrop-filter: blur(16px);
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 0 20px;
-  }
-  .logo { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 700; letter-spacing: -0.03em; }
-  .logo-icon { width: 26px; height: 26px; border-radius: 6px; background: var(--acid); display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
-  .logo span { color: var(--acid); }
-  .hdr-tag { font-family: var(--mono); font-size: 10px; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; display: none; }
-  @media (min-width: 600px) { .hdr-tag { display: block; } .hdr { padding: 0 32px; } }
+  .hdr { position:sticky; top:0; z-index:100; height:56px; border-bottom:1px solid var(--border); background:rgba(7,7,8,0.9); backdrop-filter:blur(16px); display:flex; align-items:center; justify-content:space-between; padding:0 16px; }
+  @media(min-width:600px){ .hdr { padding:0 32px; } }
+  .logo { display:flex; align-items:center; gap:10px; font-size:16px; font-weight:700; letter-spacing:-0.03em; }
+  .logo-icon { width:26px; height:26px; border-radius:6px; background:var(--acid); display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0; }
+  .logo span { color:var(--acid); }
+  .hdr-right { display:flex; align-items:center; gap:12px; }
+  .hdr-tag { font-family:var(--mono); font-size:10px; color:var(--text3); letter-spacing:0.08em; text-transform:uppercase; display:none; }
+  @media(min-width:600px){ .hdr-tag { display:block; } }
+
+  /* Mode toggle */
+  .mode-toggle { display:flex; background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:3px; gap:2px; }
+  .mode-btn { padding:5px 12px; border:none; border-radius:5px; font-family:var(--font); font-size:11px; font-weight:600; cursor:pointer; transition:all 0.15s; background:transparent; color:var(--text3); white-space:nowrap; }
+  .mode-btn.on { background:var(--bg3); color:var(--text); border:1px solid var(--border); }
 
   /* Main */
-  .main { max-width: 860px; margin: 0 auto; padding: 40px 16px 80px; }
-  @media (min-width: 600px) { .main { padding: 56px 24px 100px; } }
+  .main { max-width:860px; margin:0 auto; padding:40px 16px 80px; }
+  @media(min-width:600px){ .main { padding:56px 24px 100px; } }
 
   /* Hero */
-  .hero { margin-bottom: 40px; }
-  .badge {
-    display: inline-flex; align-items: center; gap: 7px;
-    background: rgba(200,241,53,0.06); border: 1px solid rgba(200,241,53,0.15);
-    border-radius: 100px; padding: 5px 14px; margin-bottom: 24px;
-  }
-  .badge-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--acid); animation: pulse 2s infinite; flex-shrink: 0; }
-  .badge-text { font-family: var(--mono); font-size: 10px; color: var(--acid-dim); letter-spacing: 0.08em; text-transform: uppercase; }
-  .hero h1 { font-size: clamp(1.9rem, 6vw, 3.8rem); font-weight: 800; letter-spacing: -0.04em; line-height: 1.05; margin-bottom: 16px; }
-  .hero h1 .dim { color: var(--text3); font-weight: 300; }
-  .hero h1 .acc { color: var(--acid); }
-  .hero p { color: var(--text2); font-size: 14px; line-height: 1.7; max-width: 440px; }
-  @media (min-width: 600px) { .hero p { font-size: 15px; } }
-  .benchmarks { display: flex; gap: 20px; margin-top: 28px; flex-wrap: wrap; align-items: center; }
-  .bench { display: flex; flex-direction: column; gap: 3px; }
-  .bench-val { font-family: var(--mono); font-size: 18px; font-weight: 600; color: var(--acid); }
-  .bench-lbl { font-family: var(--mono); font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; }
-  .bench-sep { width: 1px; height: 32px; background: var(--border); }
+  .hero { margin-bottom:40px; }
+  .badge { display:inline-flex; align-items:center; gap:7px; background:rgba(200,241,53,0.06); border:1px solid rgba(200,241,53,0.15); border-radius:100px; padding:5px 14px; margin-bottom:24px; }
+  .badge-dot { width:5px; height:5px; border-radius:50%; background:var(--acid); animation:pulse 2s infinite; flex-shrink:0; }
+  .badge-text { font-family:var(--mono); font-size:10px; color:var(--acid-dim); letter-spacing:0.08em; text-transform:uppercase; }
+  .hero h1 { font-size:clamp(1.9rem,6vw,3.8rem); font-weight:800; letter-spacing:-0.04em; line-height:1.05; margin-bottom:16px; }
+  .hero h1 .dim { color:var(--text3); font-weight:300; }
+  .hero h1 .acc { color:var(--acid); }
+  .hero p { color:var(--text2); font-size:14px; line-height:1.7; max-width:440px; }
+  .benchmarks { display:flex; gap:20px; margin-top:28px; flex-wrap:wrap; align-items:center; }
+  .bench { display:flex; flex-direction:column; gap:3px; }
+  .bench-val { font-family:var(--mono); font-size:18px; font-weight:600; color:var(--acid); }
+  .bench-lbl { font-family:var(--mono); font-size:9px; color:var(--text3); text-transform:uppercase; letter-spacing:0.08em; }
+  .bench-sep { width:1px; height:32px; background:var(--border); }
 
   /* Dropzone */
-  .dropzone {
-    position: relative; overflow: hidden;
-    border: 1px solid var(--border); border-radius: var(--r2);
-    padding: 48px 20px; text-align: center; cursor: pointer;
-    background: var(--bg1); transition: border-color 0.2s, background 0.2s;
-    margin-bottom: 10px;
-  }
-  @media (min-width: 600px) { .dropzone { padding: 60px 32px; } }
-  .dropzone:hover { border-color: var(--border2); background: var(--bg2); }
-  .dropzone.drag { border-color: var(--acid); background: rgba(200,241,53,0.03); animation: glow 1.5s infinite; }
-  .dropzone.has-file { border-color: #2a3a00; background: rgba(200,241,53,0.02); }
-  .dz-corner { position: absolute; width: 14px; height: 14px; border-color: var(--border2); border-style: solid; }
+  .dropzone { position:relative; overflow:hidden; border:1px solid var(--border); border-radius:var(--r2); padding:48px 20px; text-align:center; cursor:pointer; background:var(--bg1); transition:border-color 0.2s,background 0.2s; margin-bottom:10px; }
+  @media(min-width:600px){ .dropzone { padding:60px 32px; } }
+  .dropzone:hover { border-color:var(--border2); background:var(--bg2); }
+  .dropzone.drag { border-color:var(--acid); background:rgba(200,241,53,0.03); animation:glow 1.5s infinite; }
+  .dropzone.has-file { border-color:#2a3a00; background:rgba(200,241,53,0.02); }
+  .dropzone.multi { border-style:dashed; }
+  .dz-corner { position:absolute; width:14px; height:14px; border-color:var(--border2); border-style:solid; }
   .dz-corner.tl { top:10px; left:10px; border-width:1px 0 0 1px; }
   .dz-corner.tr { top:10px; right:10px; border-width:1px 1px 0 0; }
   .dz-corner.bl { bottom:10px; left:10px; border-width:0 0 1px 1px; }
   .dz-corner.br { bottom:10px; right:10px; border-width:0 1px 1px 0; }
-  .dz-icon { width: 48px; height: 48px; border-radius: 12px; background: var(--bg3); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 20px; transition: border-color 0.2s; }
-  .dropzone.has-file .dz-icon { border-color: #3a5500; background: #0d1500; }
-  .dz-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 5px; }
-  .dz-sub { font-family: var(--mono); font-size: 11px; color: var(--text3); letter-spacing: 0.06em; }
-  .dz-file-size { font-family: var(--mono); font-size: 11px; color: #3a5500; margin-top: 4px; }
-  .dz-scan { position: absolute; left:0; right:0; height:1px; background: linear-gradient(90deg, transparent, rgba(200,241,53,0.3), transparent); animation: scan 3s linear infinite; pointer-events: none; }
+  .dz-icon { width:48px; height:48px; border-radius:12px; background:var(--bg3); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; margin:0 auto 16px; font-size:20px; transition:border-color 0.2s; }
+  .dropzone.has-file .dz-icon { border-color:#3a5500; background:#0d1500; }
+  .dz-title { font-size:14px; font-weight:600; color:var(--text); margin-bottom:5px; }
+  .dz-sub { font-family:var(--mono); font-size:11px; color:var(--text3); letter-spacing:0.06em; }
+  .dz-file-size { font-family:var(--mono); font-size:11px; color:#3a5500; margin-top:4px; }
+  .dz-scan { position:absolute; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(200,241,53,0.3),transparent); animation:scan 3s linear infinite; pointer-events:none; }
 
-  /* Privacy strip */
-  .privacy {
-    display: flex; align-items: center; gap: 8px;
-    background: var(--bg2); border: 1px solid var(--border);
-    border-radius: var(--r); padding: 10px 14px; margin-bottom: 14px;
-    flex-wrap: wrap;
-  }
-  .privacy-icon { font-size: 13px; flex-shrink: 0; }
-  .privacy-text { font-family: var(--mono); font-size: 10px; color: var(--text3); letter-spacing: 0.04em; line-height: 1.5; }
-  .privacy-text strong { color: var(--text2); font-weight: 500; }
+  /* Batch file list */
+  .file-list { background:var(--bg2); border:1px solid var(--border); border-radius:var(--r); margin-bottom:10px; overflow:hidden; }
+  .file-item { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-bottom:1px solid var(--border); gap:10px; }
+  .file-item:last-child { border-bottom:none; }
+  .file-name { font-family:var(--mono); font-size:11px; color:var(--text2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
+  .file-size { font-family:var(--mono); font-size:10px; color:var(--text3); flex-shrink:0; }
+  .file-remove { background:none; border:none; color:var(--text3); cursor:pointer; font-size:14px; padding:0 4px; line-height:1; flex-shrink:0; }
+  .file-remove:hover { color:var(--red); }
+  .file-status { font-family:var(--mono); font-size:10px; flex-shrink:0; }
+  .file-status.ok { color:var(--acid); }
+  .file-status.err { color:var(--red); }
+  .file-status.loading { color:var(--text3); animation:shimmer 1.5s infinite; }
+
+  /* Privacy */
+  .privacy { display:flex; align-items:flex-start; gap:8px; background:var(--bg2); border:1px solid var(--border); border-radius:var(--r); padding:10px 14px; margin-bottom:14px; }
+  .privacy-icon { font-size:13px; flex-shrink:0; margin-top:1px; }
+  .privacy-text { font-family:var(--mono); font-size:10px; color:var(--text3); letter-spacing:0.03em; line-height:1.6; }
+  .privacy-text strong { color:var(--text2); font-weight:500; }
 
   /* Error */
-  .error-box { background: #1a0000; border: 1px solid #3a0000; border-radius: var(--r); padding: 12px 16px; color: var(--red); font-family: var(--mono); font-size: 12px; display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .error-box { background:#1a0000; border:1px solid #3a0000; border-radius:var(--r); padding:12px 16px; color:var(--red); font-family:var(--mono); font-size:12px; display:flex; align-items:center; gap:10px; margin-bottom:14px; }
 
   /* Convert button */
-  .cvt-btn {
-    width: 100%; padding: 16px;
-    background: var(--acid); color: #050505;
-    border: none; border-radius: var(--r2);
-    font-family: var(--font); font-size: 14px; font-weight: 700;
-    letter-spacing: 0.06em; text-transform: uppercase;
-    cursor: pointer; transition: all 0.18s;
-    display: flex; align-items: center; justify-content: center; gap: 10px;
-  }
-  .cvt-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(200,241,53,0.2); }
-  .cvt-btn:disabled { background: var(--bg3); color: var(--text3); cursor: not-allowed; border: 1px solid var(--border); }
-  .spinner { width: 14px; height: 14px; border: 2px solid rgba(200,241,53,0.2); border-top-color: var(--acid); border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+  .cvt-btn { width:100%; padding:16px; background:var(--acid); color:#050505; border:none; border-radius:var(--r2); font-family:var(--font); font-size:14px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; cursor:pointer; transition:all 0.18s; display:flex; align-items:center; justify-content:center; gap:10px; }
+  .cvt-btn:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 6px 28px rgba(200,241,53,0.2); }
+  .cvt-btn:disabled { background:var(--bg3); color:var(--text3); cursor:not-allowed; border:1px solid var(--border); }
+  .spinner { width:14px; height:14px; border:2px solid rgba(200,241,53,0.2); border-top-color:var(--acid); border-radius:50%; animation:spin 0.7s linear infinite; flex-shrink:0; }
+  .spinner.dark { border-color:rgba(0,0,0,0.2); border-top-color:#050505; }
 
   /* Stats */
-  .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
-  @media (min-width: 500px) { .stats-grid { grid-template-columns: repeat(6, 1fr); } }
-  .stat { background: var(--bg1); border: 1px solid var(--border); border-radius: var(--r); padding: 12px 14px; transition: border-color 0.2s; }
-  .stat:hover { border-color: var(--border2); }
-  .stat.hi { background: #0a0f00; border-color: #1e2e00; }
-  .stat.hi:hover { border-color: var(--acid); }
-  .stat-lbl { font-family: var(--mono); font-size: 8px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
-  .stat-val { font-family: var(--mono); font-size: 15px; font-weight: 600; color: var(--text); }
-  .stat.hi .stat-lbl { color: #4a6a00; }
-  .stat.hi .stat-val { color: var(--acid); }
+  .stats-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:16px; }
+  @media(min-width:500px){ .stats-grid { grid-template-columns:repeat(6,1fr); } }
+  .stat { background:var(--bg1); border:1px solid var(--border); border-radius:var(--r); padding:12px 14px; transition:border-color 0.2s; }
+  .stat:hover { border-color:var(--border2); }
+  .stat.hi { background:#0a0f00; border-color:#1e2e00; }
+  .stat.hi:hover { border-color:var(--acid); }
+  .stat-lbl { font-family:var(--mono); font-size:8px; color:var(--text3); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:6px; }
+  .stat-val { font-family:var(--mono); font-size:15px; font-weight:600; color:var(--text); }
+  .stat.hi .stat-lbl { color:#4a6a00; }
+  .stat.hi .stat-val { color:var(--acid); }
 
-  /* AI Polish banner */
-  .ai-banner {
-    display: flex; align-items: center; justify-content: space-between;
-    gap: 12px; flex-wrap: wrap;
-    background: linear-gradient(135deg, #0a0f00 0%, #0c0c0e 100%);
-    border: 1px solid #2a3a00; border-radius: var(--r2);
-    padding: 14px 18px; margin-bottom: 14px;
-  }
-  .ai-banner-left { display: flex; align-items: center; gap: 10px; }
-  .ai-icon { font-size: 18px; }
-  .ai-title { font-size: 13px; font-weight: 700; color: var(--acid); margin-bottom: 2px; }
-  .ai-sub { font-family: var(--mono); font-size: 10px; color: var(--text3); }
-  .ai-btn {
-    padding: 9px 18px; border-radius: 8px; border: none;
-    background: var(--acid); color: #050505;
-    font-family: var(--font); font-size: 12px; font-weight: 700;
-    letter-spacing: 0.05em; text-transform: uppercase;
-    cursor: pointer; transition: all 0.18s; white-space: nowrap;
-    display: flex; align-items: center; gap: 8px;
-  }
-  .ai-btn:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
-  .ai-btn:disabled { background: var(--bg3); color: var(--text3); cursor: not-allowed; border: 1px solid var(--border); }
-  .ai-btn .spinner { border-top-color: var(--text3); }
-
-  /* AI shimmer loading */
-  .ai-loading {
-    font-family: var(--mono); font-size: 11px;
-    background: linear-gradient(90deg, var(--text3) 25%, var(--acid-dim) 50%, var(--text3) 75%);
-    background-size: 200% 100%;
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    animation: shimmer 2s infinite; letter-spacing: 0.06em;
-  }
+  /* AI Banner */
+  .ai-banner { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; background:#0a0f00; border:1px solid #2a3a00; border-radius:var(--r2); padding:14px 18px; margin-bottom:14px; }
+  .ai-banner-left { display:flex; align-items:center; gap:10px; }
+  .ai-icon { font-size:18px; }
+  .ai-title { font-size:13px; font-weight:700; color:var(--acid); margin-bottom:2px; }
+  .ai-sub { font-family:var(--mono); font-size:10px; color:var(--text3); }
+  .ai-sub.loading { animation:shimmer 1.5s infinite; color:var(--acid-dim); }
+  .ai-btn { padding:9px 18px; border-radius:8px; border:none; background:var(--acid); color:#050505; font-family:var(--font); font-size:12px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; cursor:pointer; transition:all 0.18s; white-space:nowrap; display:flex; align-items:center; gap:8px; }
+  .ai-btn:hover:not(:disabled) { opacity:0.88; transform:translateY(-1px); }
+  .ai-btn:disabled { background:var(--bg3); color:var(--text3); cursor:not-allowed; border:1px solid var(--border); }
 
   /* Toolbar */
-  .toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
-  .tabs { display: flex; gap: 2px; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 3px; }
-  .tab { padding: 6px 14px; border: none; border-radius: 6px; font-family: var(--font); font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s; background: transparent; color: var(--text3); white-space: nowrap; }
-  .tab.on { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
-  .actions { display: flex; gap: 6px; flex-wrap: wrap; }
-  .btn { padding: 7px 14px; border-radius: 8px; font-family: var(--font); font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
-  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text3); }
-  .btn-ghost:hover { border-color: var(--border2); color: var(--text2); }
-  .btn-copy { background: transparent; border: 1px solid var(--border); color: var(--text3); }
-  .btn-copy.ok { background: #0a0f00; border-color: #2a3a00; color: var(--acid); }
-  .btn-dl { background: var(--acid); border: none; color: #050505; }
-  .btn-dl:hover { opacity: 0.88; }
+  .toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap; gap:8px; }
+  .tabs { display:flex; gap:2px; background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:3px; }
+  .tab { padding:6px 14px; border:none; border-radius:6px; font-family:var(--font); font-size:12px; font-weight:500; cursor:pointer; transition:all 0.15s; background:transparent; color:var(--text3); white-space:nowrap; }
+  .tab.on { background:var(--bg3); color:var(--text); border:1px solid var(--border); }
+  .actions { display:flex; gap:6px; flex-wrap:wrap; }
+  .btn { padding:7px 14px; border-radius:8px; font-family:var(--font); font-size:12px; font-weight:600; cursor:pointer; transition:all 0.15s; white-space:nowrap; }
+  .btn-ghost { background:transparent; border:1px solid var(--border); color:var(--text3); }
+  .btn-ghost:hover { border-color:var(--border2); color:var(--text2); }
+  .btn-copy { background:transparent; border:1px solid var(--border); color:var(--text3); }
+  .btn-copy.ok { background:#0a0f00; border-color:#2a3a00; color:var(--acid); }
+  .btn-claude { background:transparent; border:1px solid #2a2060; color:#8877dd; }
+  .btn-claude:hover { border-color:#4a40a0; background:#0a0820; }
+  .btn-dl { background:var(--acid); border:none; color:#050505; }
+  .btn-dl:hover { opacity:0.88; }
 
   /* Output pane */
-  .output-pane { background: var(--bg1); border: 1px solid var(--border); border-radius: var(--r2); padding: 20px 18px; max-height: 560px; overflow-y: auto; font-size: 14px; line-height: 1.8; }
-  @media (min-width: 600px) { .output-pane { padding: 28px 32px; } }
-  .output-pane pre { font-family: var(--mono); font-size: 12px; white-space: pre-wrap; word-break: break-word; color: var(--text3); line-height: 1.9; }
-  .md-body h1 { font-size: 1.3em; font-weight: 700; color: var(--text); margin: 20px 0 8px; letter-spacing: -0.02em; }
-  .md-body h2 { font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--acid-dim); text-transform: uppercase; letter-spacing: 0.1em; margin: 18px 0 6px; }
-  .md-body h3 { font-size: 1em; font-weight: 600; color: var(--text2); margin: 12px 0 4px; }
-  .md-body p { color: var(--text2); margin: 4px 0; }
-  .md-body hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
-  .md-body table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 11px; }
-  .md-body th { color: var(--text3); text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--border); }
-  .md-body td { color: var(--text2); padding: 5px 10px; border-bottom: 1px solid var(--border); }
-  .md-body ul, .md-body ol { padding-left: 18px; color: var(--text2); }
-  .md-body li { margin: 3px 0; }
-  .md-body code { font-family: var(--mono); font-size: 11px; background: var(--bg3); padding: 2px 5px; border-radius: 4px; color: var(--acid); }
+  .output-pane { background:var(--bg1); border:1px solid var(--border); border-radius:var(--r2); padding:20px 18px; max-height:560px; overflow-y:auto; font-size:14px; line-height:1.8; }
+  @media(min-width:600px){ .output-pane { padding:28px 32px; } }
+  .output-pane pre { font-family:var(--mono); font-size:12px; white-space:pre-wrap; word-break:break-word; color:var(--text3); line-height:1.9; }
+  .md-body h1 { font-size:1.3em; font-weight:700; color:var(--text); margin:20px 0 8px; letter-spacing:-0.02em; }
+  .md-body h2 { font-family:var(--mono); font-size:11px; font-weight:500; color:var(--acid-dim); text-transform:uppercase; letter-spacing:0.1em; margin:18px 0 6px; }
+  .md-body h3 { font-size:1em; font-weight:600; color:var(--text2); margin:12px 0 4px; }
+  .md-body p { color:var(--text2); margin:4px 0; }
+  .md-body hr { border:none; border-top:1px solid var(--border); margin:16px 0; }
+  .md-body table { width:100%; border-collapse:collapse; font-family:var(--mono); font-size:11px; }
+  .md-body th { color:var(--text3); text-align:left; padding:6px 10px; border-bottom:1px solid var(--border); }
+  .md-body td { color:var(--text2); padding:5px 10px; border-bottom:1px solid var(--border); }
+  .md-body ul,.md-body ol { padding-left:18px; color:var(--text2); }
+  .md-body li { margin:3px 0; }
+  .md-body code { font-family:var(--mono); font-size:11px; background:var(--bg3); padding:2px 5px; border-radius:4px; color:var(--acid); }
 
-  /* PDF Guide */
-  .guide { margin-top: 44px; }
-  .guide-label { font-family: var(--mono); font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.12em; text-align: center; margin-bottom: 14px; }
-  .guide-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
-  @media (min-width: 500px) { .guide-grid { grid-template-columns: repeat(3, 1fr); } }
-  .guide-card { border-radius: var(--r2); padding: 16px 18px; }
-  .guide-card.g { background: #080e00; border: 1px solid #1a2a00; }
-  .guide-card.y { background: #0e0a00; border: 1px solid #2a1e00; }
-  .guide-card.r { background: #0e0404; border: 1px solid #2a0a0a; }
-  .guide-head { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px; display: flex; align-items: center; gap: 7px; }
-  .guide-card.g .guide-head { color: var(--acid); }
-  .guide-card.y .guide-head { color: var(--yellow); }
-  .guide-card.r .guide-head { color: var(--red); }
-  .guide-items { list-style: none; }
-  .guide-items li { font-family: var(--mono); font-size: 11px; color: var(--text3); padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.03); display: flex; align-items: center; gap: 8px; }
-  .guide-items li::before { content: '›'; color: var(--border2); font-size: 13px; }
-  .guide-foot { font-family: var(--mono); font-size: 10px; color: var(--text3); text-align: center; margin-top: 16px; line-height: 1.6; }
+  /* Batch results */
+  .batch-results { background:var(--bg1); border:1px solid var(--border); border-radius:var(--r2); overflow:hidden; margin-bottom:16px; }
+  .batch-header { padding:14px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+  .batch-title { font-size:13px; font-weight:700; color:var(--text); }
+  .batch-sub { font-family:var(--mono); font-size:10px; color:var(--text3); }
+  .batch-item { display:flex; align-items:center; justify-content:space-between; padding:10px 18px; border-bottom:1px solid var(--border); gap:10px; }
+  .batch-item:last-child { border-bottom:none; }
+  .batch-item-name { font-family:var(--mono); font-size:11px; color:var(--text2); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .batch-item-stat { font-family:var(--mono); font-size:10px; color:var(--acid); flex-shrink:0; }
+  .batch-item-err { font-family:var(--mono); font-size:10px; color:var(--red); flex-shrink:0; }
+
+  /* Guide */
+  .guide { margin-top:44px; }
+  .guide-label { font-family:var(--mono); font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:0.12em; text-align:center; margin-bottom:14px; }
+  .guide-grid { display:grid; grid-template-columns:1fr; gap:8px; }
+  @media(min-width:500px){ .guide-grid { grid-template-columns:repeat(3,1fr); } }
+  .guide-card { border-radius:var(--r2); padding:16px 18px; }
+  .guide-card.g { background:#080e00; border:1px solid #1a2a00; }
+  .guide-card.y { background:#0e0a00; border:1px solid #2a1e00; }
+  .guide-card.r { background:#0e0404; border:1px solid #2a0a0a; }
+  .guide-head { font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:10px; display:flex; align-items:center; gap:7px; }
+  .guide-card.g .guide-head { color:var(--acid); }
+  .guide-card.y .guide-head { color:var(--yellow); }
+  .guide-card.r .guide-head { color:var(--red); }
+  .guide-items { list-style:none; }
+  .guide-items li { font-family:var(--mono); font-size:11px; color:var(--text3); padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.03); display:flex; align-items:center; gap:8px; }
+  .guide-items li::before { content:'›'; color:var(--border2); font-size:13px; }
+  .guide-foot { font-family:var(--mono); font-size:10px; color:var(--text3); text-align:center; margin-top:16px; line-height:1.7; }
 `;
 
-export default function App() {
-  const [dragging, setDragging]     = useState(false);
-  const [file, setFile]             = useState(null);
-  const [loading, setLoading]       = useState(false);
-  const [markdown, setMarkdown]     = useState("");
-  const [stats, setStats]           = useState(null);
-  const [error, setError]           = useState("");
-  const [copied, setCopied]         = useState(false);
-  const [tab, setTab]               = useState("preview");
-  const [aiLoading, setAiLoading]   = useState(false);
-  const [aiDone, setAiDone]         = useState(false);
-  const inputRef                    = useRef(null);
+const CLAUDE_PROMPT = (md) =>
+`Here is a document converted from PDF to Markdown. Please answer my questions about it.
 
+---
+
+${md}`;
+
+export default function App() {
+  const [mode, setMode]           = useState("single");   // "single" | "batch"
+  const [dragging, setDragging]   = useState(false);
+  const [file, setFile]           = useState(null);
+  const [batchFiles, setBatchFiles] = useState([]);
+  const [loading, setLoading]     = useState(false);
+  const [markdown, setMarkdown]   = useState("");
+  const [stats, setStats]         = useState(null);
+  const [error, setError]         = useState("");
+  const [copied, setCopied]       = useState(false);
+  const [claudeCopied, setClaudeCopied] = useState(false);
+  const [tab, setTab]             = useState("preview");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiDone, setAiDone]       = useState(false);
+  const [batchResults, setBatchResults] = useState(null);
+  const inputRef                  = useRef(null);
+  const batchRef                  = useRef(null);
+
+  // ── Single mode ──
   const handleFile = useCallback((f) => {
     if (!f) return;
     if (!f.name.match(/\.pdf$/i)) { setError("Please upload a valid .pdf file."); return; }
@@ -237,14 +232,30 @@ export default function App() {
     setFile(f); setError(""); setMarkdown(""); setStats(null); setAiDone(false);
   }, []);
 
+  // ── Batch mode ──
+  const handleBatchFiles = useCallback((newFiles) => {
+    const valid = Array.from(newFiles).filter(f => f.name.match(/\.pdf$/i));
+    if (valid.length === 0) { setError("No valid PDF files found."); return; }
+    setBatchFiles(prev => {
+      const combined = [...prev, ...valid];
+      return combined.slice(0, 10); // max 10
+    });
+    setError("");
+  }, []);
+
+  const removeFile = (i) => setBatchFiles(prev => prev.filter((_, idx) => idx !== i));
+
   const onDrop = useCallback((e) => {
-    e.preventDefault(); setDragging(false); handleFile(e.dataTransfer.files[0]);
-  }, [handleFile]);
+    e.preventDefault(); setDragging(false);
+    if (mode === "batch") handleBatchFiles(e.dataTransfer.files);
+    else handleFile(e.dataTransfer.files[0]);
+  }, [mode, handleFile, handleBatchFiles]);
 
   const onDragLeave = useCallback((e) => {
     if (!e.currentTarget.contains(e.relatedTarget)) setDragging(false);
   }, []);
 
+  // ── Convert single ──
   const convert = async () => {
     if (!file) return;
     setLoading(true); setError(""); setAiDone(false);
@@ -262,37 +273,50 @@ export default function App() {
     finally { setLoading(false); }
   };
 
+  // ── Convert batch ──
+  const convertBatch = async () => {
+    if (!batchFiles.length) return;
+    setLoading(true); setError(""); setBatchResults(null);
+    const form = new FormData();
+    batchFiles.forEach(f => form.append("files", f));
+    try {
+      const res = await fetch(`${API_URL}/batch`, { method: "POST", body: form });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: "Batch failed." }));
+        throw new Error(err.detail || "Batch failed.");
+      }
+      // Parse results from header
+      const b64 = res.headers.get("X-Batch-Results");
+      const results = b64 ? JSON.parse(atob(b64)) : [];
+      setBatchResults(results);
+      // Trigger zip download
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = "token-messiah-batch.zip"; a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) { setError(e.message); }
+    finally { setLoading(false); }
+  };
+
+  // ── AI Polish ──
   const aiPolish = async () => {
     if (!markdown) return;
     setAiLoading(true);
     try {
-      // Truncate to first 6000 chars to stay within token budget
-      const chunk = markdown.length > 6000 ? markdown.slice(0, 6000) + "\n\n[...truncated for AI polish...]" : markdown;
-      const res = await fetch(ANTHROPIC_URL, {
+      const res = await fetch(`${API_URL}/polish`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 4000,
-          system: `You are a markdown cleanup assistant. Your job is to:
-1. Fix any remaining spacing issues (merged words like "SmartGrids" → "Smart Grids")
-2. Fix broken sentences caused by column layout mixing
-3. Remove duplicate content and noise (page numbers, journal footers, artifact characters)
-4. Improve heading hierarchy where obvious
-5. Preserve all real content — do not summarize or shorten
-6. Return ONLY the cleaned markdown, no preamble or explanation`,
-          messages: [{ role: "user", content: `Clean up this extracted PDF markdown:\n\n${chunk}` }]
-        })
+        body: JSON.stringify({ markdown }),
       });
       const data = await res.json();
-      const cleaned = data.content?.[0]?.text;
-      if (cleaned) { setMarkdown(cleaned); setAiDone(true); }
-      else throw new Error("AI returned empty response.");
-    } catch (e) {
-      setError("AI polish failed: " + e.message);
-    } finally { setAiLoading(false); }
+      if (!res.ok) throw new Error(data.detail || "AI polish failed.");
+      if (data.markdown) { setMarkdown(data.markdown); setAiDone(true); }
+    } catch (e) { setError("AI polish: " + e.message); }
+    finally { setAiLoading(false); }
   };
 
+  // ── Download single ──
   const download = () => {
     const blob = new Blob([markdown], { type: "text/markdown" });
     const url = URL.createObjectURL(blob);
@@ -302,15 +326,29 @@ export default function App() {
     a.click(); URL.revokeObjectURL(url);
   };
 
+  // ── Copy markdown ──
   const copy = async () => {
     try { await navigator.clipboard.writeText(markdown); setCopied(true); setTimeout(() => setCopied(false), 2000); }
-    catch { setError("Clipboard blocked. Copy manually from Raw tab."); }
+    catch { setError("Clipboard blocked. Use Raw tab to copy."); }
+  };
+
+  // ── Claude-ready copy ──
+  const copyClaude = async () => {
+    try {
+      await navigator.clipboard.writeText(CLAUDE_PROMPT(markdown));
+      setClaudeCopied(true); setTimeout(() => setClaudeCopied(false), 2000);
+    } catch { setError("Clipboard blocked."); }
   };
 
   const reset = () => {
     setFile(null); setMarkdown(""); setStats(null); setError(""); setAiDone(false);
+    setBatchFiles([]); setBatchResults(null);
     if (inputRef.current) inputRef.current.value = "";
+    if (batchRef.current) batchRef.current.value = "";
   };
+
+  const switchMode = (m) => { setMode(m); reset(); };
+  const hasOutput = markdown || batchResults;
 
   return (
     <>
@@ -321,13 +359,19 @@ export default function App() {
           <div className="logo-icon">⚡</div>
           Token<span>Messiah</span>
         </div>
-        <div className="hdr-tag">PDF → Markdown · Token Optimizer</div>
+        <div className="hdr-right">
+          <div className="hdr-tag">PDF → Markdown</div>
+          <div className="mode-toggle">
+            <button className={`mode-btn${mode === "single" ? " on" : ""}`} onClick={() => switchMode("single")}>Single</button>
+            <button className={`mode-btn${mode === "batch" ? " on" : ""}`} onClick={() => switchMode("batch")}>Batch</button>
+          </div>
+        </div>
       </header>
 
       <main className="main">
 
         {/* Hero */}
-        {!markdown && (
+        {!hasOutput && (
           <div className="hero fadeUp">
             <div className="badge">
               <span className="badge-dot" />
@@ -338,61 +382,61 @@ export default function App() {
               <span className="acc">Feed Claude less.</span><br />
               <span className="dim">Get more done.</span>
             </h1>
-            <p>Convert text-heavy PDFs to clean Markdown. Cut image overhead, eliminate token waste, and give your LLM exactly what it needs.</p>
+            <p>Convert {mode === "batch" ? "up to 10 PDFs at once" : "text-heavy PDFs"} to clean Markdown. Cut token waste, eliminate noise, give your LLM exactly what it needs.</p>
             <div className="benchmarks">
-              <div className="bench">
-                <span className="bench-val">~1,700</span>
-                <span className="bench-lbl">tokens/page (PDF)</span>
-              </div>
+              <div className="bench"><span className="bench-val">~1,700</span><span className="bench-lbl">tokens/page (PDF)</span></div>
               <div className="bench-sep" />
-              <div className="bench">
-                <span className="bench-val">~300</span>
-                <span className="bench-lbl">tokens/page (MD)</span>
-              </div>
+              <div className="bench"><span className="bench-val">~300</span><span className="bench-lbl">tokens/page (MD)</span></div>
               <div className="bench-sep" />
-              <div className="bench">
-                <span className="bench-val">8×</span>
-                <span className="bench-lbl">avg savings</span>
-              </div>
+              <div className="bench"><span className="bench-val">8×</span><span className="bench-lbl">avg savings</span></div>
             </div>
           </div>
         )}
 
         {/* Drop zone */}
-        {!markdown && (
+        {!hasOutput && (
           <div
-            className={`dropzone${dragging ? " drag" : ""}${file && !dragging ? " has-file" : ""}`}
+            className={`dropzone${dragging ? " drag" : ""}${(file || batchFiles.length) && !dragging ? " has-file" : ""}${mode === "batch" ? " multi" : ""}`}
             onDrop={onDrop}
             onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
             onDragLeave={onDragLeave}
-            onClick={() => inputRef.current?.click()}
+            onClick={() => mode === "single" ? inputRef.current?.click() : batchRef.current?.click()}
           >
-            <input ref={inputRef} type="file" accept=".pdf" style={{ display: "none" }}
-              onChange={(e) => handleFile(e.target.files[0])} />
+            <input ref={inputRef} type="file" accept=".pdf" style={{ display:"none" }} onChange={(e) => handleFile(e.target.files[0])} />
+            <input ref={batchRef} type="file" accept=".pdf" multiple style={{ display:"none" }} onChange={(e) => handleBatchFiles(e.target.files)} />
             <div className="dz-corner tl" /><div className="dz-corner tr" />
             <div className="dz-corner bl" /><div className="dz-corner br" />
             {dragging && <div className="dz-scan" />}
-            <div className="dz-icon">{file ? "📄" : "📂"}</div>
-            {file ? (
-              <>
-                <div className="dz-title">{file.name}</div>
-                <div className="dz-file-size">{(file.size / 1024 / 1024).toFixed(2)} MB · click to change</div>
-              </>
+            <div className="dz-icon">{(file || batchFiles.length) ? "📄" : mode === "batch" ? "📦" : "📂"}</div>
+            {mode === "single" && file ? (
+              <><div className="dz-title">{file.name}</div><div className="dz-file-size">{(file.size/1024/1024).toFixed(2)} MB · click to change</div></>
+            ) : mode === "batch" && batchFiles.length ? (
+              <><div className="dz-title">{batchFiles.length} file{batchFiles.length > 1 ? "s" : ""} selected</div><div className="dz-sub">click to add more · max 10 files</div></>
             ) : (
-              <>
-                <div className="dz-title">Drop your PDF here</div>
-                <div className="dz-sub">or click to browse · max 50mb</div>
-              </>
+              <><div className="dz-title">{mode === "batch" ? "Drop multiple PDFs here" : "Drop your PDF here"}</div><div className="dz-sub">{mode === "batch" ? "up to 10 files · click to browse" : "or click to browse · max 50mb"}</div></>
             )}
           </div>
         )}
 
-        {/* Privacy disclaimer */}
-        {!markdown && (
+        {/* Batch file list */}
+        {mode === "batch" && batchFiles.length > 0 && !hasOutput && (
+          <div className="file-list fadeUp">
+            {batchFiles.map((f, i) => (
+              <div key={i} className="file-item">
+                <span className="file-name">📄 {f.name}</span>
+                <span className="file-size">{(f.size/1024/1024).toFixed(1)}MB</span>
+                <button className="file-remove" onClick={() => removeFile(i)}>✕</button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Privacy */}
+        {!hasOutput && (
           <div className="privacy">
             <span className="privacy-icon">🔒</span>
             <span className="privacy-text">
-              <strong>Your files are never stored.</strong> PDFs are processed in memory and deleted immediately after conversion. We keep no backups, logs, or copies of your documents.
+              <strong>Your files are never stored.</strong> PDFs are processed in memory and deleted immediately. No backups, no logs, no copies — ever.
             </span>
           </div>
         )}
@@ -401,11 +445,11 @@ export default function App() {
         {error && <div className="error-box">⚠ {error}</div>}
 
         {/* Convert button */}
-        {file && !markdown && (
-          <button className="cvt-btn" onClick={convert} disabled={loading}>
+        {!hasOutput && (mode === "single" ? file : batchFiles.length > 0) && (
+          <button className="cvt-btn" onClick={mode === "single" ? convert : convertBatch} disabled={loading}>
             {loading
-              ? <><div className="spinner" /> Extracting text from PDF…</>
-              : "⚡ Convert to Markdown"}
+              ? <><div className="spinner" />{mode === "batch" ? `Converting ${batchFiles.length} files…` : "Extracting text from PDF…"}</>
+              : mode === "batch" ? `⚡ Convert ${batchFiles.length} PDF${batchFiles.length > 1 ? "s" : ""} → ZIP` : "⚡ Convert to Markdown"}
           </button>
         )}
 
@@ -413,16 +457,38 @@ export default function App() {
         {stats && (
           <div className="stats-grid fadeUp">
             {[
-              { l: "Pages",      v: fmt(stats.pages) },
-              { l: "Words",      v: fmt(stats.words) },
-              { l: "MD tokens",  v: fmt(stats.tokens_markdown) },
-              { l: "PDF tokens", v: fmt(stats.tokens_pdf) },
-              { l: "Saved",      v: `~${fmt(stats.tokens_saved)}`, hi: true },
-              { l: "Reduction",  v: `${stats.savings_percent}%`,   hi: true },
+              { l:"Pages", v:fmt(stats.pages) },
+              { l:"Words", v:fmt(stats.words) },
+              { l:"MD tokens", v:fmt(stats.tokens_markdown) },
+              { l:"PDF tokens", v:fmt(stats.tokens_pdf) },
+              { l:"Saved", v:`~${fmt(stats.tokens_saved)}`, hi:true },
+              { l:"Reduction", v:`${stats.savings_percent}%`, hi:true },
             ].map(({ l, v, hi }) => (
               <div key={l} className={`stat${hi ? " hi" : ""}`}>
                 <div className="stat-lbl">{l}</div>
                 <div className="stat-val">{v}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Batch results */}
+        {batchResults && (
+          <div className="batch-results fadeUp">
+            <div className="batch-header">
+              <div>
+                <div className="batch-title">Batch Complete</div>
+                <div className="batch-sub">{batchResults.filter(r => !r.error).length}/{batchResults.length} converted · ZIP downloaded</div>
+              </div>
+              <button className="btn btn-ghost" onClick={reset}>← New batch</button>
+            </div>
+            {batchResults.map((r, i) => (
+              <div key={i} className="batch-item">
+                <span className="batch-item-name">📄 {r.file}</span>
+                {r.error
+                  ? <span className="batch-item-err">✕ {r.error}</span>
+                  : <span className="batch-item-stat">✓ ~{fmt(r.stats?.tokens_saved)} tokens saved</span>
+                }
               </div>
             ))}
           </div>
@@ -435,24 +501,22 @@ export default function App() {
               <span className="ai-icon">✨</span>
               <div>
                 <div className="ai-title">AI Polish</div>
-                <div className="ai-sub">
-                  {aiLoading
-                    ? <span className="ai-loading">Claude is cleaning your markdown…</span>
-                    : "Fix spacing, remove noise, improve structure with Claude"}
+                <div className={`ai-sub${aiLoading ? " loading" : ""}`}>
+                  {aiLoading ? "Groq AI is cleaning your markdown…" : "Fix spacing, noise & structure with Groq Llama 3"}
                 </div>
               </div>
             </div>
             <button className="ai-btn" onClick={aiPolish} disabled={aiLoading}>
-              {aiLoading ? <><div className="spinner" /> Polishing…</> : "✨ Polish with AI"}
+              {aiLoading ? <><div className="spinner dark" />Polishing…</> : "✨ Polish with AI"}
             </button>
           </div>
         )}
 
         {aiDone && (
-          <div className="privacy fadeUp" style={{ borderColor: "#2a3a00", background: "#080e00", marginBottom: "14px" }}>
+          <div className="privacy fadeUp" style={{ borderColor:"#2a3a00", background:"#080e00", marginBottom:"14px" }}>
             <span className="privacy-icon">✓</span>
-            <span className="privacy-text" style={{ color: "#4a6a00" }}>
-              <strong style={{ color: "var(--acid)" }}>AI polish applied.</strong> Claude has cleaned up spacing, removed noise, and improved structure.
+            <span className="privacy-text" style={{ color:"#4a6a00" }}>
+              <strong style={{ color:"var(--acid)" }}>AI polish applied.</strong> Groq Llama 3 has cleaned spacing, removed noise, and improved structure.
             </span>
           </div>
         )}
@@ -470,8 +534,9 @@ export default function App() {
               </div>
               <div className="actions">
                 <button className="btn btn-ghost" onClick={reset}>← New</button>
-                <button className={`btn btn-copy${copied ? " ok" : ""}`} onClick={copy}>
-                  {copied ? "✓ Copied" : "Copy"}
+                <button className={`btn btn-copy${copied ? " ok" : ""}`} onClick={copy}>{copied ? "✓ Copied" : "Copy"}</button>
+                <button className={`btn btn-claude${claudeCopied ? " ok" : ""}`} onClick={copyClaude} title="Copy with Claude-ready prompt">
+                  {claudeCopied ? "✓ Ready!" : "⬡ Claude"}
                 </button>
                 <button className="btn btn-dl" onClick={download}>↓ .md</button>
               </div>
@@ -485,27 +550,25 @@ export default function App() {
           </div>
         )}
 
-        {/* PDF guide */}
-        {!markdown && (
+        {/* PDF Guide */}
+        {!hasOutput && (
           <div className="guide fadeUp">
             <div className="guide-label">What works best</div>
             <div className="guide-grid">
               {[
-                { cls: "g", icon: "✓", label: "Best results",    items: ["Academic papers", "Research reports", "Technical docs", "Books & articles", "Legal documents"] },
-                { cls: "y", icon: "~", label: "Partial results", items: ["2-column layouts", "Newsletters", "Presentations", "Form-heavy PDFs", "Dense tables"] },
-                { cls: "r", icon: "✕", label: "Poor results",    items: ["Scanned / image PDFs", "Brochures & flyers", "Handwritten docs", "Password protected", "Image-only PDFs"] },
+                { cls:"g", icon:"✓", label:"Best results",    items:["Academic papers","Research reports","Technical docs","Books & articles","Legal documents"] },
+                { cls:"y", icon:"~", label:"Partial results", items:["2-column layouts","Newsletters","Presentations","Form-heavy PDFs","Dense tables"] },
+                { cls:"r", icon:"✕", label:"Poor results",    items:["Scanned / image PDFs","Brochures & flyers","Handwritten docs","Password protected","Image-only PDFs"] },
               ].map(({ cls, icon, label, items }) => (
                 <div key={label} className={`guide-card ${cls}`}>
                   <div className="guide-head"><span>{icon}</span>{label}</div>
-                  <ul className="guide-items">
-                    {items.map(item => <li key={item}>{item}</li>)}
-                  </ul>
+                  <ul className="guide-items">{items.map(item => <li key={item}>{item}</li>)}</ul>
                 </div>
               ))}
             </div>
             <div className="guide-foot">
               Scanned PDFs require OCR — not yet supported · Max 50MB per file<br />
-              🔒 Files are processed in memory only — never stored or logged
+              🔒 Files processed in memory only — never stored or logged
             </div>
           </div>
         )}
